@@ -55,3 +55,6 @@ EXPOSE 80
 
 # Start Apache
 CMD ["apache2-foreground"]
+
+# Run migrations on startup
+RUN php artisan migrate --force || true
