@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -9,15 +9,16 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libzip-dev \
     zip \
-    unzip \
-    nginx \
-    supervisor
+    unzip
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -39,47 +40,18 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Create nginx config
-RUN echo 'server { \
-    listen 8080; \
-    root /var/www/html/public; \
-    index index.php; \
-    location / { \
-        try_files $uri $uri/ /index.php?$query_string; \
-    } \
-    location ~ \.php$ { \
-        fastcgi_pass 127.0.0.1:9000; \
-        fastcgi_index index.php; \
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name; \
-        include fastcgi_params; \
-    } \
-}' > /etc/nginx/sites-available/default
+# Configure Apache DocumentRoot to point to Laravel's public directory
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-# Create supervisor config
-RUN echo '[supervisord] \
-nodaemon=true \
-user=root \
-logfile=/var/log/supervisor/supervisord.log \
-pidfile=/var/run/supervisord.pid \
-\
-[program:php-fpm] \
-command=php-fpm \
-user=root \
-autostart=true \
-autorestart=true \
-\
-[program:nginx] \
-command=nginx -g "daemon off;" \
-user=root \
-autostart=true \
-autorestart=true' > /etc/supervisor/conf.d/supervisord.conf
+# Create Apache .htaccess for Laravel (if not exists)
+RUN echo 'Options -MultiViews -Indexes\nRewriteEngine On\n\n# Handle Authorization Header\nRewriteCond %{HTTP:Authorization} .\nRewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\n\n# Redirect Trailing Slashes If Not A Folder...\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteCond %{REQUEST_URI} (.+)/$\nRewriteRule ^ %1 [L,R=301]\n\n# Send Requests To Front Controller...\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^ index.php [L]' > /var/www/html/public/.htaccess
 
 # Generate application key and run post-install scripts
 RUN php artisan key:generate --no-interaction || true
 RUN composer run-script --no-dev post-autoload-dump || true
 
-# Expose port
-EXPOSE 8080
+# Expose port 80
+EXPOSE 80
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Start Apache
+CMD ["apache2-foreground"]
