@@ -56,5 +56,9 @@ EXPOSE 80
 # Start Apache
 CMD ["apache2-foreground"]
 
-# Run migrations on startup
-RUN php artisan migrate --force || true
+# Create a startup script
+RUN echo '#!/bin/bash\nphp artisan migrate --force\napache2-foreground' > /start.sh
+RUN chmod +x /start.sh
+
+# Change the CMD to use the startup script
+CMD ["/start.sh"]
