@@ -31,6 +31,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
+            // Handle OPTIONS requests for CORS preflight
+            Route::options('api/{any}', function () {
+                return response()->json(null, 200);
+            })->where('any', '.*');
+
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
         });
