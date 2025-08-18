@@ -20,9 +20,23 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public routes (no authentication required)
-Route::middleware('cors')->group(function () {
+Route::middleware(['cors', 'handle.options'])->group(function () {
     Route::match(['post', 'options'], '/register', [AuthController::class, 'register']);
     Route::match(['post', 'options'], '/login', [AuthController::class, 'login']);
+});
+
+// Health check endpoint
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'cors' => 'enabled',
+        'headers' => [
+            'Access-Control-Allow-Origin' => config('cors.allowed_origins'),
+            'Access-Control-Allow-Methods' => config('cors.allowed_methods'),
+            'Access-Control-Allow-Headers' => config('cors.allowed_headers'),
+            'Access-Control-Allow-Credentials' => config('cors.supports_credentials'),
+        ]
+    ]);
 });
 
 // Protected routes (authentication required)
