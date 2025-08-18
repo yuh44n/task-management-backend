@@ -16,8 +16,9 @@ return [
     */
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+        '%s%s%s',
+        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1,',
+        'remarkable-dodol-6ce841.netlify.app,',
         Sanctum::currentApplicationUrlWithPort()
     ))),
 
