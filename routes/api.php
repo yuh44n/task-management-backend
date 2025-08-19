@@ -65,6 +65,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/attachments', [FileAttachmentController::class, 'upload']);
         Route::get('/attachments', [FileAttachmentController::class, 'getTaskAttachments']);
     });
+    
+    // Additional routes for interactions
+    Route::get('/tasks/{task}/mentionable-users', [TaskInteractionController::class, 'getMentionableUsers']);
 
     // Individual interactions
     Route::prefix('interactions')->group(function () {
@@ -84,6 +87,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // File Attachments
         Route::get('/{interaction}/attachments', [FileAttachmentController::class, 'getInteractionAttachments']);
     });
+    
+    // Additional routes for attachments
+    Route::get('/interactions/{interaction}/attachments', [FileAttachmentController::class, 'getInteractionAttachments']);
     
     // File Attachments
     Route::delete('/attachments/{attachment}', [FileAttachmentController::class, 'delete']);

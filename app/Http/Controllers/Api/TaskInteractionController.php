@@ -491,29 +491,62 @@ class TaskInteractionController extends Controller
      */
     public function getMentionableUsers(Task $task): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if (!$task->canView($user->id)) {
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            if (!$task->canView($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to view this task'
+                ], 403);
+            }
+
+            $mentionableUsers = collect();
+            
+            if ($user->isAdmin()) {
+                $mentionableUsers = User::query()->select('id', 'name', 'email')->get();
+            } else {
+                // Add task creator if exists
+                if ($task->creator) {
+                    $mentionableUsers->push($task->creator);
+                }
+                
+                // Safely merge assigned users if they exist
+                if ($task->assignedUsers && $task->assignedUsers->count() > 0) {
+                    $mentionableUsers = $mentionableUsers->merge($task->assignedUsers);
+                }
+                
+                // Add current user if not already in the list
+                if (!$mentionableUsers->contains('id', $user->id)) {
+                    $mentionableUsers->push($user);
+                }
+                
+                // Remove duplicates
+                $mentionableUsers = $mentionableUsers->unique('id');
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to view this task'
-            ], 403);
+                'success' => true,
+                'users' => $mentionableUsers,
+            ]);
+        } catch (\Exception $e) {
+            // Log the error
+            \Log::error('Error getting mentionable users: ' . $e->getMessage());
+            
+            // Return a fallback response with just the current user
+            return response()->json([
+                'success' => true,
+                'users' => [Auth::user()],
+                'error' => 'Could not retrieve all mentionable users'
+            ]);
         }
-
-        $mentionableUsers = collect();
-        
-        if ($user->isAdmin()) {
-            $mentionableUsers = User::query()->select('id', 'name', 'email')->get();
-        } else {
-            $mentionableUsers->push($task->creator);
-            $mentionableUsers = $mentionableUsers->merge($task->assignedUsers);
-            $mentionableUsers = $mentionableUsers->unique('id');
-        }
-
-        return response()->json([
-            'success' => true,
-            'users' => $mentionableUsers,
-        ]);
     }
 
     /**
@@ -538,31 +571,50 @@ class TaskInteractionController extends Controller
      */
     private function notifyTaskParticipants($task, $user, $type, $message, $metadata = [])
     {
-        // Notify task creator if comment is not by them
-        if ($task->created_by !== $user->id) {
-            TaskInteraction::createNotification(
-                $task->created_by,
-                $task->id,
-                'New comment on your task',
-                $message,
-                $type,
-                array_merge($metadata, ['commenter_name' => $user->name])
-            );
-        }
-
-        // Notify other task participants
-        $taskParticipants = $task->assignedUsers()->where('user_id', '!=', $user->id)->get();
-        foreach ($taskParticipants as $participant) {
-            if ($participant->id !== $task->created_by) {
-                TaskInteraction::createNotification(
-                    $participant->id,
-                    $task->id,
-                    'New comment on task',
-                    $message,
-                    $type,
-                    array_merge($metadata, ['commenter_name' => $user->name])
-                );
+        try {
+            // Validate inputs
+            if (!$task || !$user || !$task->id || !$user->id) {
+                \Log::warning('Invalid task or user data in notifyTaskParticipants');
+                return;
             }
+
+            // Notify task creator if comment is not by them and creator exists
+            if ($task->created_by && $task->created_by !== $user->id) {
+                try {
+                    TaskInteraction::createNotification(
+                        $task->created_by,
+                        $task->id,
+                        'New comment on your task',
+                        $message,
+                        $type,
+                        array_merge($metadata, ['commenter_name' => $user->name])
+                    );
+                } catch (\Exception $e) {
+                    \Log::error('Failed to notify task creator: ' . $e->getMessage());
+                }
+            }
+
+            // Notify other task participants
+            try {
+                $taskParticipants = $task->assignedUsers()->where('user_id', '!=', $user->id)->get();
+                
+                foreach ($taskParticipants as $participant) {
+                    if ($participant && $participant->id && $participant->id !== $task->created_by) {
+                        TaskInteraction::createNotification(
+                            $participant->id,
+                            $task->id,
+                            'New comment on task',
+                            $message,
+                            $type,
+                            array_merge($metadata, ['commenter_name' => $user->name])
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to notify task participants: ' . $e->getMessage());
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error in notifyTaskParticipants: ' . $e->getMessage());
         }
     }
 }
