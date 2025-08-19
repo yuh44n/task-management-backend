@@ -503,7 +503,7 @@ class TaskInteractionController extends Controller
         $mentionableUsers = collect();
         
         if ($user->isAdmin()) {
-            $mentionableUsers = User::select('id', 'name', 'email')->get();
+            $mentionableUsers = User::query()->select('id', 'name', 'email')->get();
         } else {
             $mentionableUsers->push($task->creator);
             $mentionableUsers = $mentionableUsers->merge($task->assignedUsers);
