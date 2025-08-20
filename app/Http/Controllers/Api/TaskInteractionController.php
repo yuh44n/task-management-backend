@@ -519,8 +519,21 @@ class TaskInteractionController extends Controller
                 }
                 
                 // Safely merge assigned users if they exist
-                if ($task->assignedUsers && $task->assignedUsers->count() > 0) {
-                    $mentionableUsers = $mentionableUsers->merge($task->assignedUsers);
+                try {
+                    if ($task->assignedUsers && $task->assignedUsers->count() > 0) {
+                        $mentionableUsers = $mentionableUsers->merge($task->assignedUsers);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Error merging assigned users: ' . $e->getMessage());
+                    // Try to load the task with assigned users explicitly
+                    try {
+                        $refreshedTask = Task::with('assignedUsers')->find($task->id);
+                        if ($refreshedTask && $refreshedTask->assignedUsers && $refreshedTask->assignedUsers->count() > 0) {
+                            $mentionableUsers = $mentionableUsers->merge($refreshedTask->assignedUsers);
+                        }
+                    } catch (\Exception $innerEx) {
+                        \Log::error('Error loading task with assigned users: ' . $innerEx->getMessage());
+                    }
                 }
                 
                 // Add current user if not already in the list
