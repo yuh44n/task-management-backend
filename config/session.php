@@ -31,9 +31,9 @@ return [
     |
     */
 
-    'lifetime' => env('SESSION_LIFETIME', 120),
+    'lifetime' => env('SESSION_LIFETIME', 60),
 
-    'expire_on_close' => false,
+    'expire_on_close' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -46,7 +46,7 @@ return [
     |
     */
 
-    'encrypt' => false,
+    'encrypt' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -94,9 +94,7 @@ return [
     |
     | While using one of the framework's cache driven session backends you may
     | list a cache store that should be used for these sessions. This value
-    | must match with one of the application's configured cache "stores".
-    |
-    | Affects: "apc", "dynamodb", "memcached", "redis"
+    | must match with one of the application's configured cache stores.
     |
     */
 
@@ -168,7 +166,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -196,6 +194,6 @@ return [
     |
     */
 
-    'same_site' => 'lax',
+    'same_site' => 'strict',
 
 ];
