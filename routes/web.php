@@ -19,7 +19,7 @@ Route::get('/', function () {
 });
 
 // Non-prefixed routes for file attachments (to handle requests without /api prefix)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['cors', 'auth:sanctum'])->group(function () {
     // File Attachments routes
     Route::prefix('tasks/{task}')->group(function () {
         Route::post('/attachments', [FileAttachmentController::class, 'upload']);
