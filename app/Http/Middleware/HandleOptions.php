@@ -24,12 +24,8 @@ class HandleOptions
             $origin = $request->header('Origin');
             
             // Set CORS headers
-            if ($origin) {
-                // Allow the specific origin that made the request
-                $response->header('Access-Control-Allow-Origin', $origin);
-            } else {
-                $response->header('Access-Control-Allow-Origin', '*');
-            }
+            // Always set Access-Control-Allow-Origin header
+            $response->header('Access-Control-Allow-Origin', $origin ?: '*');
             
             $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
             $response->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, Accept');

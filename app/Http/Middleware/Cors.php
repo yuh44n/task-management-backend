@@ -25,12 +25,8 @@ class Cors
 
         // Add CORS headers to the response
         $origin = $request->header('Origin');
-        if ($origin) {
-            // Allow the specific origin that made the request
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-        } else {
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-        }
+        // Always set Access-Control-Allow-Origin header
+        $response->headers->set('Access-Control-Allow-Origin', $origin ?: '*');
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
         $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, Accept');
         $response->headers->set('Access-Control-Allow-Credentials', 'true');
