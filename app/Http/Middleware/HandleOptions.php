@@ -24,7 +24,8 @@ class HandleOptions
             $origin = $request->header('Origin');
             
             // Set CORS headers
-            if ($origin === 'https://remarkable-dodol-6ce841.netlify.app') {
+            if ($origin) {
+                // Allow the specific origin that made the request
                 $response->header('Access-Control-Allow-Origin', $origin);
             } else {
                 $response->header('Access-Control-Allow-Origin', '*');

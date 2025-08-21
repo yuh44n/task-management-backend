@@ -15,11 +15,11 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', '*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://remarkable-dodol-6ce841.netlify.app', '*'],
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
