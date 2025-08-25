@@ -37,8 +37,8 @@ COPY . .
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
+    && chmod -R 777 /var/www/html/storage \
+    && chmod -R 777 /var/www/html/bootstrap/cache
 
 # Configure Apache DocumentRoot to point to Laravel's public directory
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
@@ -59,6 +59,13 @@ echo "Starting Laravel application setup..."\n\
 \n\
 # Ensure composer dependencies are optimized\n\
 composer install --no-dev --optimize-autoloader\n\
+\n\
+# Create storage link\n\
+php artisan storage:link || true\n\
+\n\
+# Fix permissions for storage and logs\n\
+chmod -R 777 /var/www/html/storage\n\
+chmod -R 777 /var/www/html/bootstrap/cache\n\
 \n\
 # Cache configuration for better performance\n\
 php artisan config:cache\n\
